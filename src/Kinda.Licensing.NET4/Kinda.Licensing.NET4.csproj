@@ -43,11 +43,20 @@
     <Compile Include="Crypto\CryptoKey.cs" />
     <Compile Include="Crypto\CryptoKeyProvider.cs" />
     <Compile Include="Crypto\DocumentSigning.cs" />
+    <Compile Include="Domain\License.cs" />
     <Compile Include="Domain\LicenseCriteria.cs" />
     <Compile Include="Domain\LicenseCriteriaSerializer.cs" />
     <Compile Include="Domain\LicenseElements.cs" />
+    <Compile Include="Domain\LicenseGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Validation\ILicenseValidationRule.cs" />
+    <Compile Include="Validation\InvalidLicenseException.cs" />
+    <Compile Include="Rules\LicenseExpiredException.cs" />
+    <Compile Include="Validation\LicenseValidator.cs" />
+    <Compile Include="Validation\LicenseViolationException.cs" />
+    <Compile Include="Rules\LicenseHasNotExpiredRule.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
