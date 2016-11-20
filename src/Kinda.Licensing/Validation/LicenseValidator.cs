@@ -7,6 +7,13 @@ namespace Kinda.Licensing
     {
         public LicenseCriteria Validate(License license, CryptoKey publicKey, IEnumerable<ILicenseValidationRule> validationRules)
         {
+            if (license == null)
+                throw new ArgumentNullException(nameof(license));
+            if (publicKey == null)
+                throw new ArgumentNullException(nameof(publicKey));
+            if (validationRules == null)
+                throw new ArgumentNullException(nameof(validationRules));
+
             var documentSigning = new DocumentSigning();
             if (!documentSigning.Validate(license.Document, publicKey))
             {

@@ -1,2 +1,2 @@
 # Kinda.Licensing
-Some kind of Software Licensing Framework
+Some kind of software licensing library

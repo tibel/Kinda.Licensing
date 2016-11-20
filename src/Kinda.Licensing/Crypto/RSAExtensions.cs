@@ -1,11 +1,11 @@
-﻿using System;
-using System.Security.Cryptography;
-using System.Text;
-using System.Xml.Linq;
-
-namespace Kinda.Licensing
+﻿namespace Kinda.Licensing
 {
 #if !COMPAT_NET4
+
+    using System;
+    using System.Security.Cryptography;
+    using System.Text;
+    using System.Xml.Linq;
 
     /// <summary>
     /// Extensions to <see cref="RSA"/> that are not present in .NET Standard.
@@ -48,7 +48,7 @@ namespace Kinda.Licensing
             var document = XDocument.Parse(xmlString);
             var topElement = document.Root;
 
-            RSAParameters rsaParams = new RSAParameters();
+            var rsaParams = new RSAParameters();
 
             var modulusString = (string)topElement.Element("Modulus");
             if (modulusString == null)
