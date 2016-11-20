@@ -28,7 +28,7 @@ namespace Kinda.Licensing.Demo.ClientApp
             {
                 var licenseValidationRules = new List<ILicenseValidationRule>
                 {
-                    new LicenseHasNotExpiredRule(),
+                    new SimpleLicenseHasNotExpiredRule(),
                     new ValidNumberOfCoresLicenseRule()
                 };
 

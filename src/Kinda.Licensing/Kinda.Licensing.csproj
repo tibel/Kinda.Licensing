@@ -50,7 +50,7 @@
     <Compile Include="Domain\LicenseGenerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rules\LicenseExpiredException.cs" />
-    <Compile Include="Rules\LicenseHasNotExpiredRule.cs" />
+    <Compile Include="Rules\SimpleLicenseHasNotExpiredRule.cs" />
     <Compile Include="Validation\ILicenseValidationRule.cs" />
     <Compile Include="Validation\InvalidLicenseException.cs" />
     <Compile Include="Validation\LicenseValidator.cs" />
