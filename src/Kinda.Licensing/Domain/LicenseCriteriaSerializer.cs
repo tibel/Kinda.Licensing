@@ -76,14 +76,14 @@ namespace Kinda.Licensing
             return licenseCriteria;
         }
 
-        private static DateTime ParseDateTime(string s)
+        private static DateTimeOffset ParseDateTime(string s)
         {
-            return DateTime.ParseExact(s, "r", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            return DateTimeOffset.ParseExact(s, "r", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
         }
 
-        private static string FormatDateTime(DateTime d)
+        private static string FormatDateTime(DateTimeOffset d)
         {
-            return d.ToUniversalTime().ToString("r");
+            return d.ToString("r");
         }
     }
 }

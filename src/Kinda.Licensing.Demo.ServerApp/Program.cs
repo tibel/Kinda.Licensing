@@ -18,8 +18,8 @@ namespace Kinda.Licensing.Demo.ServerApp
 
             var licenseCriteria = new LicenseCriteria
             {
-                ExpirationDate = DateTime.UtcNow.AddDays(30),
-                IssueDate = DateTime.UtcNow,
+                ExpirationDate = DateTimeOffset.UtcNow.AddDays(30),
+                IssueDate = DateTimeOffset.UtcNow,
                 Id = Guid.NewGuid(),
                 MetaData = new Dictionary<string, string> { { "LicensedCores", "2" } },
                 Type = "Subscription"

@@ -7,9 +7,9 @@ namespace Kinda.Licensing
     {
         public Guid Id { get; set; }
 
-        public DateTime IssueDate { get; set; }
+        public DateTimeOffset IssueDate { get; set; }
 
-        public DateTime ExpirationDate { get; set; }
+        public DateTimeOffset ExpirationDate { get; set; }
 
         public string Type { get; set; }
 

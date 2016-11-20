@@ -6,7 +6,7 @@ namespace Kinda.Licensing
     {
         public void Validate(LicenseCriteria licenseCriteria)
         {
-            if (DateTime.UtcNow > licenseCriteria.ExpirationDate)
+            if (DateTimeOffset.UtcNow > licenseCriteria.ExpirationDate)
             {
                 throw new LicenseExpiredException(string.Format("License expired on {0:O}", licenseCriteria.ExpirationDate));
             }
