@@ -27,10 +27,19 @@ namespace Kinda.Licensing
 
             var hash = ComputeHash(document);
 
-            using (var asymmetricAlgorithm = new RSACryptoServiceProvider())
+#if COMPAT_NET4
+            using (var rsa = new RSACryptoServiceProvider())
+#else
+            using (var rsa = RSA.Create())
+#endif
             {
-                asymmetricAlgorithm.FromXmlString(privateKey.Contents);
-                var signature = asymmetricAlgorithm.SignHash(hash, CryptoConfig.MapNameToOID("SHA256"));
+                rsa.FromXmlString(privateKey.Contents);
+
+#if COMPAT_NET4
+                var signature = rsa.SignHash(hash, "SHA256");
+#else
+                var signature = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+#endif
 
                 signatureElement = new XElement(SignatureElementName);
                 signatureElement.SetAttributeValue(AlgorithmAttributeName, AlgorithmAttributeValue);
@@ -64,10 +73,19 @@ namespace Kinda.Licensing
                 var signatureValue = (string)signatureElement.Element(SignatureValueElementName);
                 var signature = Convert.FromBase64String(signatureValue);
 
-                using (var asymmetricAlgorithm = new RSACryptoServiceProvider())
+#if COMPAT_NET4
+            using (var rsa = new RSACryptoServiceProvider())
+#else
+                using (var rsa = RSA.Create())
+#endif
                 {
-                    asymmetricAlgorithm.FromXmlString(publicKey.Contents);
-                    return asymmetricAlgorithm.VerifyHash(hash, CryptoConfig.MapNameToOID("SHA256"), signature);
+                    rsa.FromXmlString(publicKey.Contents);
+
+#if COMPAT_NET4
+                    return rsa.VerifyHash(hash, "SHA256", signature);
+#else
+                    return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+#endif
                 }
             }
             finally

@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kinda.Licensing.NET4", "src\Kinda.Licensing.NET4\Kinda.Licensing.NET4.csproj", "{793EB37B-57C1-439D-A765-945B5CD2B39E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kinda.Licensing", "src\Kinda.Licensing\Kinda.Licensing.csproj", "{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
