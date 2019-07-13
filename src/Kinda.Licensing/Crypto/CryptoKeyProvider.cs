@@ -9,7 +9,7 @@ namespace Kinda.Licensing
         {
             using (var rsa = RSA.Create())
             {
-                return new CryptoKey(rsa.ToXmlString(true));
+                return new CryptoKey(RSAHelper.ExportToXmlString(rsa, true));
             }
         }
 
@@ -20,8 +20,8 @@ namespace Kinda.Licensing
 
             using (var rsa = RSA.Create())
             {
-                rsa.FromXmlString(privateKey.Contents);
-                return new CryptoKey(rsa.ToXmlString(false));
+                RSAHelper.ImportFromXmlString(rsa, privateKey.Contents);
+                return new CryptoKey(RSAHelper.ExportToXmlString(rsa, false));
             }
         }
     }

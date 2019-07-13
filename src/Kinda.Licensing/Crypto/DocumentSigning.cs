@@ -29,7 +29,7 @@ namespace Kinda.Licensing
 
             using (var rsa = RSA.Create())
             {
-                rsa.FromXmlString(privateKey.Contents);
+                RSAHelper.ImportFromXmlString(rsa, privateKey.Contents);
 
                 var signature = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
@@ -67,7 +67,7 @@ namespace Kinda.Licensing
 
                 using (var rsa = RSA.Create())
                 {
-                    rsa.FromXmlString(publicKey.Contents);
+                    RSAHelper.ImportFromXmlString(rsa, publicKey.Contents);
 
                     return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 }
