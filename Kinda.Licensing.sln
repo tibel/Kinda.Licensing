@@ -1,17 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kinda.Licensing.NET4", "src\Kinda.Licensing.NET4\Kinda.Licensing.NET4.csproj", "{793EB37B-57C1-439D-A765-945B5CD2B39E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demo", "Demo", "{9DFFF82D-859C-4F21-93AC-912C26CBDDB6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kinda.Licensing", "src\Kinda.Licensing\Kinda.Licensing.csproj", "{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Kinda.Licensing.Demo.ServerApp", "src\Kinda.Licensing.Demo.ServerApp\Kinda.Licensing.Demo.ServerApp.xproj", "{16106B22-35E1-4552-9F0A-174F29051C4C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kinda.Licensing.Demo.ServerApp", "src\Kinda.Licensing.Demo.ServerApp\Kinda.Licensing.Demo.ServerApp.csproj", "{16106B22-35E1-4552-9F0A-174F29051C4C}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Kinda.Licensing.Demo.ClientApp", "src\Kinda.Licensing.Demo.ClientApp\Kinda.Licensing.Demo.ClientApp.xproj", "{41DDDCA4-2CAE-4143-8F89-1BADC7168903}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demo", "Demo", "{9DFFF82D-859C-4F21-93AC-912C26CBDDB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kinda.Licensing.Demo.ClientApp", "src\Kinda.Licensing.Demo.ClientApp\Kinda.Licensing.Demo.ClientApp.csproj", "{41DDDCA4-2CAE-4143-8F89-1BADC7168903}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{793EB37B-57C1-439D-A765-945B5CD2B39E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B27D8FF3-415E-4ABA-A3BC-2223D25FD23F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -42,5 +36,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{16106B22-35E1-4552-9F0A-174F29051C4C} = {9DFFF82D-859C-4F21-93AC-912C26CBDDB6}
 		{41DDDCA4-2CAE-4143-8F89-1BADC7168903} = {9DFFF82D-859C-4F21-93AC-912C26CBDDB6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6D1F50A-FEEE-402E-99FD-1A8345849E3A}
 	EndGlobalSection
 EndGlobal

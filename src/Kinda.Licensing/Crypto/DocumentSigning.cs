@@ -27,19 +27,11 @@ namespace Kinda.Licensing
 
             var hash = ComputeHash(document);
 
-#if COMPAT_NET4
-            using (var rsa = new RSACryptoServiceProvider())
-#else
             using (var rsa = RSA.Create())
-#endif
             {
                 rsa.FromXmlString(privateKey.Contents);
 
-#if COMPAT_NET4
-                var signature = rsa.SignHash(hash, "SHA256");
-#else
                 var signature = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-#endif
 
                 signatureElement = new XElement(SignatureElementName);
                 signatureElement.SetAttributeValue(AlgorithmAttributeName, AlgorithmAttributeValue);
@@ -73,19 +65,11 @@ namespace Kinda.Licensing
                 var signatureValue = (string)signatureElement.Element(SignatureValueElementName);
                 var signature = Convert.FromBase64String(signatureValue);
 
-#if COMPAT_NET4
-            using (var rsa = new RSACryptoServiceProvider())
-#else
                 using (var rsa = RSA.Create())
-#endif
                 {
                     rsa.FromXmlString(publicKey.Contents);
 
-#if COMPAT_NET4
-                    return rsa.VerifyHash(hash, "SHA256", signature);
-#else
                     return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-#endif
                 }
             }
             finally

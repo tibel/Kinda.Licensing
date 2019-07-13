@@ -1,7 +1,5 @@
 ﻿using System;
-#if COMPAT_NET4
 using System.Runtime.Serialization;
-#endif
 
 namespace Kinda.Licensing
 {
@@ -19,10 +17,8 @@ namespace Kinda.Licensing
         {
         }
 
-#if COMPAT_NET4
         protected InvalidLicenseException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
         }
-#endif
     }
 }
