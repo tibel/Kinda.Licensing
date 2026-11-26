@@ -1,7 +1,11 @@
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -118,6 +122,54 @@ public class LicenseTests
         snapshot.Clear();
 
         await Assert.That(() => rule.Validate(new LicenseCriteria { Id = revokedId }))
+            .ThrowsExactly<LicenseViolationException>();
+    }
+
+    [Test]
+    public async Task HttpDateTimeProviderReadsHttpsDateHeader()
+    {
+        var expected = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        using var httpClient = new HttpClient(new DateHeaderHandler(expected));
+
+        var actual = await HttpDateTimeProvider.GetUtcNowAsync(
+            httpClient, new Uri("https://time.example"));
+
+        await Assert.That(actual).IsEqualTo(expected);
+    }
+
+    [Test]
+    public async Task HttpDateTimeProviderRejectsMissingDateAndCrossAuthorityRedirects()
+    {
+        using var missingDateClient = new HttpClient(new DateHeaderHandler(null));
+        await Assert.That(async () => await HttpDateTimeProvider.GetUtcNowAsync(
+            missingDateClient, new Uri("https://time.example")))
+            .ThrowsExactly<InvalidOperationException>();
+
+        using var redirectClient = new HttpClient(new DateHeaderHandler(
+            DateTimeOffset.UtcNow, new Uri("https://other.example")));
+        await Assert.That(async () => await HttpDateTimeProvider.GetUtcNowAsync(
+            redirectClient, new Uri("https://time.example")))
+            .ThrowsExactly<InvalidOperationException>();
+    }
+
+    [Test]
+    public async Task HttpDateTimeProviderRequiresHttps()
+    {
+        using var httpClient = new HttpClient(new DateHeaderHandler(DateTimeOffset.UtcNow));
+
+        await Assert.That(async () => await HttpDateTimeProvider.GetUtcNowAsync(
+            httpClient, new Uri("http://time.example")))
+            .ThrowsExactly<ArgumentException>();
+    }
+
+    [Test]
+    public async Task SystemClockRuleAcceptsTrustedTimeAndRejectsLargeClockDrift()
+    {
+        var criteria = new LicenseCriteria();
+        new LicenseSystemClockRule(DateTimeOffset.UtcNow).Validate(criteria);
+
+        await Assert.That(() => new LicenseSystemClockRule(
+                DateTimeOffset.UtcNow.AddMinutes(-10)).Validate(criteria))
             .ThrowsExactly<LicenseViolationException>();
     }
 
@@ -306,6 +358,35 @@ public class LicenseTests
         var publicKey = RSA.Create();
         publicKey.ImportFromPem(privateKey.ExportSubjectPublicKeyInfoPem());
         return publicKey;
+    }
+
+    private sealed class DateHeaderHandler : HttpMessageHandler
+    {
+        private readonly DateTimeOffset? _date;
+        private readonly Uri? _responseUri;
+
+        public DateHeaderHandler(DateTimeOffset? date, Uri? responseUri = null)
+        {
+            _date = date;
+            _responseUri = responseUri;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (_responseUri is not null)
+                request.RequestUri = _responseUri;
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request
+            };
+            if (_date is not null)
+                response.Headers.Date = _date;
+
+            return Task.FromResult(response);
+        }
     }
 
     private sealed class MetadataRule : ILicenseValidationRule

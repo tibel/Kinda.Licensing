@@ -50,6 +50,10 @@ licenses under the same public key. Choose a new directory for another run.
 - `LicenseOfflineLeaseRule` enforces a seven-day maximum lease by default. `LicenseRevocationRule`
   rejects IDs in a host-provided revocation snapshot; hosts must authenticate and refresh that
   snapshot when clients reconnect. Offline revocation cannot be immediate.
+- For an optional online clock check, fetch time from a trusted HTTPS endpoint with
+  `HttpDateTimeProvider.GetUtcNowAsync` and pass it to `LicenseSystemClockRule`. HTTP/network errors
+  propagate; callers decide whether to deny validation or fall back to local time. This can deter
+  casual clock changes, but is not a trusted clock against a user controlling the client.
 - `License.Load` parses XML with DTD processing disabled and a one-million-character limit by
   default. Callers that parse XML themselves remain responsible for safe parsing and size limits.
 - Signature validation detects modification of licensed data; it does not prevent a user from
