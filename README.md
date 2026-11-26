@@ -68,6 +68,34 @@ Use an application-specific identifier and avoid personal or low-entropy values:
 make such values secret. Device binding is a client-side policy and can be bypassed by a user who
 controls the verifier.
 
+## Floating licenses
+
+`IFloatingLicenseService` is a host-implemented adapter contract; the library does not include a
+server, transport, authentication, persistence, or seat-allocation implementation. The host must
+atomically allocate a seat per distinct `(pool, device)` pair, return the active lease for duplicate
+acquisition by that device, and reserve seats until lease expiry unless release succeeds. `License.Id`
+is the lease ID; signed leases include `FloatingLicenseLeaseValidator.PoolIdMetadataKey` and the
+machine-code metadata key.
+
+Validate every returned lease with the current trusted keys and revocation snapshot:
+
+```csharp
+var lease = await service.AcquireAsync(poolId, deviceId, cancellationToken);
+var leaseValidator = new FloatingLicenseLeaseValidator();
+var criteria = leaseValidator.Validate(lease, trustedPublicKeys, poolId, deviceId, currentRevokedLeaseIds);
+var renewedLease = await service.RenewAsync(poolId, criteria.Id, deviceId, cancellationToken);
+var renewedCriteria = leaseValidator.Validate(
+    renewedLease, trustedPublicKeys, poolId, deviceId, currentRevokedLeaseIds);
+await service.ReleaseAsync(poolId, renewedCriteria.Id, deviceId, cancellationToken);
+```
+
+The validator checks the signature (including retiring keys during rotation), pool and device
+binding, revocation snapshot, and the seven-day maximum lease. Refresh revocation data when the
+client reconnects. A successful release frees the server-side seat but does not stop a disconnected
+client from using its still-valid lease until expiry; local checks can be bypassed by a user who
+controls the client. When issuing such a lease with the Admin CLI, pass `--device-id` and include
+the pool as `--metadata FloatingLicensePool=<pool-id>`.
+
 ## Security
 
 - Licenses use an enveloped XML Digital Signature (XMLDSIG) over the whole document, with
