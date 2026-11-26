@@ -1,100 +1,48 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Xml.Linq;
 
-namespace Kinda.Licensing.Demo.ClientApp
+namespace Kinda.Licensing.Demo.ClientApp;
+
+public class Program
 {
-    public class Program
+    public static int Main(string[] args)
     {
-        public static void Main(string[] args)
+        if (args.Length != 1)
         {
-            var publicKey = new CryptoKey(GetPublicKeyString());
-            var license = new License(XDocument.Parse(GetLicenseString()));
+            Console.Error.WriteLine("Usage: Kinda.Licensing.Demo.ClientApp <license-directory>");
+            return 1;
+        }
 
-            ValidateLicense(publicKey, license);
+        try
+        {
+            var publicKey = new CryptoKey(File.ReadAllText(Path.Combine(args[0], "public-key.xml")));
+            var license = new License(XDocument.Load(Path.Combine(args[0], "license.xml")));
+            var rules = new List<ILicenseValidationRule>
+            {
+                new SimpleLicenseHasNotExpiredRule(),
+                new ValidNumberOfCoresLicenseRule()
+            };
 
+            new LicenseValidator().Validate(license, publicKey, rules);
             Console.WriteLine("No license violations");
-            Console.WriteLine("Press any key");
-
-            Console.ReadKey();
+            return 0;
         }
-
-        private static void ValidateLicense(CryptoKey publicKey, License license)
+        catch (InvalidLicenseException)
         {
-            var violations = new List<string>();
-
-            try
-            {
-                var licenseValidationRules = new List<ILicenseValidationRule>
-                {
-                    new SimpleLicenseHasNotExpiredRule(),
-                    new ValidNumberOfCoresLicenseRule()
-                };
-
-                new LicenseValidator().Validate(license, publicKey, licenseValidationRules);
-            }
-            catch (InvalidLicenseException exception)
-            {
-                violations.Add(exception.Message);
-            }
-            catch (AggregateException ex)
-            {
-                var innerExceptions = ex.InnerExceptions;
-
-                foreach (var exception in innerExceptions)
-                {
-                    if (exception is LicenseViolationException)
-                    {
-                        violations.Add(exception.Message);
-                    }
-                }
-
-                if (!violations.Any())
-                {
-                    throw;
-                }
-            }
-            catch (Exception)
-            {
-                violations.Add("Unknown license error");
-            }
-
-            if (violations.Any())
-            {
-                Console.WriteLine("License violations encountered:");
-                foreach (var violation in violations)
-                {
-                    Console.WriteLine(" - " + violation);
-                }
-
-                Console.WriteLine("Press any key");
-                Console.ReadKey();
-
-                Environment.Exit(-1);
-            }
+            Console.Error.WriteLine("The license signature is invalid.");
         }
-
-        private static string GetPublicKeyString()
+        catch (AggregateException exception)
         {
-            return "<RSAKeyValue><Modulus>mV72Mj7A3IsD2ex2AjdwLuYw0Spb61Yn9nTd6b8hDY5L+X37eUzPKbCO1coQ3U2rxWRY/VxJncQYpSVN7jEnqUj7z87dO0Bd6XZrqHef8pmkg1TrZuLEKZIVsj9dCYw1fEvsSdiYhQxFVLTLlnRKb8eDX6E38PzesV2kPegZUo4+vAstFwPlgPOVLR+UOZBkq4w674WtggmUVeECIaXnOxAJv4FVLnIkjBSI8Vcbt5Dd+hHw9AoaNe6zgF+Ldpv7gKD3AyHLqdrkZ4BlyTsDqvkEkoWqnUVIVrTRQyi6Ld8k20zpUi87vMG/gJ/SNlRGQBAkKsdfoAyHEHJNqOr+mw==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+            foreach (var error in exception.InnerExceptions)
+                Console.Error.WriteLine(error.Message);
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine("Could not validate the license: " + exception.Message);
         }
 
-        private static string GetLicenseString()
-        {
-            return @"
-<License>
-  <Id>4b971ba7-7ec2-4cb1-9b3d-3615fec4b1b9</Id>
-  <IssueDate>Sun, 20 Nov 2016 10:35:11 GMT</IssueDate>
-  <Type>Subscription</Type>
-  <ExpirationDate>Tue, 20 Dec 2016 10:35:11 GMT</ExpirationDate>
-  <LicensedCores>2</LicensedCores>
-  <Signature Algorithm=""rsa-sha256"">
-    <DigestValue>8hLlfGql8wDfyXPitM4wiDwbS4pBUSNqKmZI4r51xv0=</DigestValue>
-    <SignatureValue>bSIYTvk9d+r/LQUUqfe/J1AdqLRMccn1amdiKSXrjK/qpJbh36tQ12DRiXpIAABRFL/2UjRhVX2Dezyeh5Re4x5fffTcYqo6J8PxvVobWAenty5mcrNpS+KRYAKRdADcyJTKocK6nAfG7VzDlE+zopLc0HWZoSgniuLs55fU2Y4KK1FIbjc3yceIowz1jUOvvfOnN25xSLrbRJ7cttc9BfZV5sdES9prUU4MYPAh5eY8sdnuEZ/OilnrVrq//hsNf2aMnd52VLqU48uefIe31wTbmTJkgtOx27cod45t7yQe1uMgsF7saLRg1DFGz0DIxbYLMiPalCzEC+jaYL1X0w==</SignatureValue>
-  </Signature>
-</License>
-";
-        }
+        return 1;
     }
 }

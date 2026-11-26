@@ -1,28 +1,27 @@
-﻿using System;
+using System;
 using System.Security.Cryptography;
 
-namespace Kinda.Licensing
+namespace Kinda.Licensing;
+
+public class CryptoKeyProvider
 {
-    public class CryptoKeyProvider
+    public CryptoKey GenerateKey()
     {
-        public CryptoKey GenerateKey()
+        using (var rsa = RSA.Create())
         {
-            using (var rsa = RSA.Create())
-            {
-                return new CryptoKey(RSAHelper.ExportToXmlString(rsa, true));
-            }
+            return new CryptoKey(rsa.ToXmlString(true));
         }
+    }
 
-        public CryptoKey ExtractPublicKey(CryptoKey privateKey)
+    public CryptoKey ExtractPublicKey(CryptoKey privateKey)
+    {
+        if (privateKey == null)
+            throw new ArgumentNullException(nameof(privateKey));
+
+        using (var rsa = RSA.Create())
         {
-            if (privateKey == null)
-                throw new ArgumentNullException(nameof(privateKey));
-
-            using (var rsa = RSA.Create())
-            {
-                RSAHelper.ImportFromXmlString(rsa, privateKey.Contents);
-                return new CryptoKey(RSAHelper.ExportToXmlString(rsa, false));
-            }
+            rsa.FromXmlString(privateKey.Contents);
+            return new CryptoKey(rsa.ToXmlString(false));
         }
     }
 }

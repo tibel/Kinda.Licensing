@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build Kinda.Licensing.slnx -c Release
+      - run: dotnet test Kinda.Licensing.slnx -c Release --no-build
+      - run: dotnet pack (Join-Path src Kinda.Licensing) -c Release --no-build
+        shell: pwsh
+
+  native-aot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Install Native AOT prerequisites
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+      - name: Publish issuer
+        run: dotnet publish (Join-Path src Kinda.Licensing.Demo.ServerApp) -c Release -r linux-x64 -p:PublishAot=true -p:IlcTreatWarningsAsErrors=true -o (Join-Path $env:RUNNER_TEMP issuer)
+      - name: Publish client
+        run: dotnet publish (Join-Path src Kinda.Licensing.Demo.ClientApp) -c Release -r linux-x64 -p:PublishAot=true -p:IlcTreatWarningsAsErrors=true -o (Join-Path $env:RUNNER_TEMP client)
+      - name: Exercise native executables
+        run: |
+          & (Join-Path $env:RUNNER_TEMP issuer Kinda.Licensing.Demo.ServerApp) (Join-Path $env:RUNNER_TEMP demo-license)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & (Join-Path $env:RUNNER_TEMP client Kinda.Licensing.Demo.ClientApp) (Join-Path $env:RUNNER_TEMP demo-license)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

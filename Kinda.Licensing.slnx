@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Demo/">
+    <Project Path="src/Kinda.Licensing.Demo.ClientApp/Kinda.Licensing.Demo.ClientApp.csproj" />
+    <Project Path="src/Kinda.Licensing.Demo.ServerApp/Kinda.Licensing.Demo.ServerApp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kinda.Licensing.Tests/Kinda.Licensing.Tests.csproj" />
+  </Folder>
+  <Project Path="src/Kinda.Licensing/Kinda.Licensing.csproj" />
+</Solution>

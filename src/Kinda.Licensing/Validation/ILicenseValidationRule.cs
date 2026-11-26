@@ -1,7 +1,6 @@
-﻿namespace Kinda.Licensing
+namespace Kinda.Licensing;
+
+public interface ILicenseValidationRule
 {
-    public interface ILicenseValidationRule
-    {
-        void Validate(LicenseCriteria licenseCriteria);
-    }
+    void Validate(LicenseCriteria licenseCriteria);
 }

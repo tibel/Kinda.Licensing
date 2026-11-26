@@ -1,105 +1,107 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 
-namespace Kinda.Licensing
+namespace Kinda.Licensing;
+
+public class DocumentSigning
 {
-    public class DocumentSigning
+    private const string SignatureElementName = "Signature";
+    private const string DigestValueElementName = "DigestValue";
+    private const string SignatureValueElementName = "SignatureValue";
+
+    private const string AlgorithmAttributeName = "Algorithm";
+    private const string AlgorithmAttributeValue = "rsa-sha256";
+
+    public void Sign(XDocument document, CryptoKey privateKey)
     {
-        private const string SignatureElementName = "Signature";
-        private const string DigestValueElementName = "DigestValue";
-        private const string SignatureValueElementName = "SignatureValue";
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+        if (privateKey == null)
+            throw new ArgumentNullException(nameof(privateKey));
 
-        private const string AlgorithmAttributeName = "Algorithm";
-        private const string AlgorithmAttributeValue = "rsa-sha256";
+        var signatureElement = GetSignatureElement(document);
+        if (signatureElement != null)
+            throw new InvalidOperationException("Already signed");
 
-        public void Sign(XDocument document, CryptoKey privateKey)
+        var hash = ComputeHash(document);
+
+        using (var rsa = RSA.Create())
         {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-            if (privateKey == null)
-                throw new ArgumentNullException(nameof(privateKey));
+            rsa.FromXmlString(privateKey.Contents);
 
-            var signatureElement = GetSignatureElement(document);
-            if (signatureElement != null)
-                throw new InvalidOperationException("Already signed");
+            var signature = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
-            var hash = ComputeHash(document);
+            signatureElement = new XElement(SignatureElementName);
+            signatureElement.SetAttributeValue(AlgorithmAttributeName, AlgorithmAttributeValue);
+            signatureElement.SetElementValue(DigestValueElementName, Convert.ToBase64String(hash));
+            signatureElement.SetElementValue(SignatureValueElementName, Convert.ToBase64String(signature));
+            document.Root.Add(signatureElement);
+        }
+    }
 
-            using (var rsa = RSA.Create())
-            {
-                RSAHelper.ImportFromXmlString(rsa, privateKey.Contents);
+    public bool Validate(XDocument document, CryptoKey publicKey)
+    {
+        if (document == null)
+            throw new ArgumentNullException(nameof(document));
+        if (publicKey == null)
+            throw new ArgumentNullException(nameof(publicKey));
 
-                var signature = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var signatureElement = GetSignatureElement(document);
+        if (signatureElement == null)
+            return false;
 
-                signatureElement = new XElement(SignatureElementName);
-                signatureElement.SetAttributeValue(AlgorithmAttributeName, AlgorithmAttributeValue);
-                signatureElement.SetElementValue(DigestValueElementName, Convert.ToBase64String(hash));
-                signatureElement.SetElementValue(SignatureValueElementName, Convert.ToBase64String(signature));
-                document.Root.Add(signatureElement);
-            }
+        var unsignedDocument = new XDocument(document);
+        GetSignatureElement(unsignedDocument).Remove();
+
+        var digestValue = (string)signatureElement.Element(DigestValueElementName);
+        var hash = ComputeHash(unsignedDocument);
+        if (digestValue != Convert.ToBase64String(hash))
+            return false;
+
+        var signatureValue = (string)signatureElement.Element(SignatureValueElementName);
+        if (signatureValue == null)
+            return false;
+
+        byte[] signature;
+        try
+        {
+            signature = Convert.FromBase64String(signatureValue);
+        }
+        catch (FormatException)
+        {
+            return false;
         }
 
-        public bool Validate(XDocument document, CryptoKey publicKey)
+        using (var rsa = RSA.Create())
         {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-            if (publicKey == null)
-                throw new ArgumentNullException(nameof(publicKey));
-
-            var signatureElement = GetSignatureElement(document);
-            if (signatureElement == null)
-                return false;
-
-            try
-            {
-                signatureElement.Remove();
-
-                var digestValue = (string)signatureElement.Element(DigestValueElementName);
-
-                var hash = ComputeHash(document);
-                if (digestValue != Convert.ToBase64String(hash))
-                    return false;
-
-                var signatureValue = (string)signatureElement.Element(SignatureValueElementName);
-                var signature = Convert.FromBase64String(signatureValue);
-
-                using (var rsa = RSA.Create())
-                {
-                    RSAHelper.ImportFromXmlString(rsa, publicKey.Contents);
-
-                    return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                }
-            }
-            finally
-            {
-                document.Root.Add(signatureElement);
-            }
+            rsa.FromXmlString(publicKey.Contents);
+            return rsa.VerifyHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         }
+    }
 
-        private static XElement GetSignatureElement(XDocument document)
+    private static XElement GetSignatureElement(XDocument document)
+    {
+        var signature = document.Root?.LastNode as XElement;
+        if (signature == null || signature.Name != SignatureElementName)
+            return null;
+
+        var algorithmAttribute = signature.Attribute(AlgorithmAttributeName);
+        if ((string)algorithmAttribute != AlgorithmAttributeValue)
+            return null;
+
+        return signature;
+    }
+
+    private static byte[] ComputeHash(XDocument document)
+    {
+        using (var hashAlgorithm = SHA256.Create())
+        using (var stream = new MemoryStream())
         {
-            var signature = document.Root.LastNode as XElement;
-            if (signature == null || signature.Name != SignatureElementName)
-                return null;
-
-            var algorithmAttribute = signature.Attribute(AlgorithmAttributeName);
-            if (algorithmAttribute.Value != AlgorithmAttributeValue)
-                return null;
-
-            return signature;
-        }
-
-        private static byte[] ComputeHash(XDocument document)
-        {
-            using (var hashAlgorithm = SHA256.Create())
-            using (var stream = new MemoryStream())
-            {
-                document.Save(stream);
-                stream.Position = 0;
-                return hashAlgorithm.ComputeHash(stream);
-            }
+            document.Save(stream);
+            stream.Position = 0;
+            return hashAlgorithm.ComputeHash(stream);
         }
     }
 }
