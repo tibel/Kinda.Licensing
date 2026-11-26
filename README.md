@@ -44,14 +44,29 @@ provided by the caller and never writes private keys:
 dotnet run --project src/Kinda.Licensing.Admin -- issue `
   --private-key issuer-private.pem --output license.xml `
   --public-key-output public-key.pem --type Subscription `
-  --expires 2026-12-01T00:00:00Z --metadata LicensedCores=4
+  --expires 2026-12-01T00:00:00Z --metadata LicensedCores=4 `
+  --device-id persisted-app-device-id
 
 dotnet run --project src/Kinda.Licensing.Admin -- inspect `
-  --license license.xml --public-key public-key.pem
+  --license license.xml --public-key public-key.pem `
+  --device-id persisted-app-device-id
 ```
 
 Issuance enforces a seven-day maximum lease, and output files are not overwritten. Inspection
 verifies the signature and lease before displaying the license criteria.
+
+## Device-bound licenses
+
+The host application supplies and persists a stable, opaque device identifier. The library does
+not inspect hardware or collect machine information. `MachineCodeGenerator.Generate` hashes the
+identifier's exact UTF-8 bytes with SHA-256; store the result under
+`MachineCodeGenerator.MetadataKey` when issuing a license, then add
+`new LicenseMachineCodeRule(deviceId)` to the client's validation rules. The Admin CLI's optional
+`--device-id` does the same for issue and inspect.
+
+Use an application-specific identifier and avoid personal or low-entropy values: hashing does not
+make such values secret. Device binding is a client-side policy and can be bypassed by a user who
+controls the verifier.
 
 ## Security
 

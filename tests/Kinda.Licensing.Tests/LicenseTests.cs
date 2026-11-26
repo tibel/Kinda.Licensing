@@ -24,6 +24,42 @@ public class LicenseTests
     }
 
     [Test]
+    public async Task MachineCodeGeneratorCreatesStableSha256Code()
+    {
+        const string deviceId = "device-id-123";
+
+        var machineCode = MachineCodeGenerator.Generate(deviceId);
+
+        await Assert.That(machineCode)
+            .IsEqualTo("C768C833D5591E7B6FAA18E883403B46F27FB1310CCEA7464479B2901A65C692");
+        await Assert.That(MachineCodeGenerator.Generate(deviceId)).IsEqualTo(machineCode);
+        await Assert.That(() => MachineCodeGenerator.Generate(" "))
+            .ThrowsExactly<ArgumentException>();
+    }
+
+    [Test]
+    public async Task MachineCodeRuleRequiresMatchingDeviceMetadata()
+    {
+        const string deviceId = "device-id-123";
+        var rule = new LicenseMachineCodeRule(deviceId);
+        var criteria = new LicenseCriteria();
+        criteria.MetaData.Add(
+            MachineCodeGenerator.MetadataKey,
+            MachineCodeGenerator.Generate(deviceId));
+
+        rule.Validate(criteria);
+
+        var mismatchedCriteria = new LicenseCriteria();
+        mismatchedCriteria.MetaData.Add(
+            MachineCodeGenerator.MetadataKey,
+            MachineCodeGenerator.Generate("another-device"));
+        await Assert.That(() => rule.Validate(mismatchedCriteria))
+            .ThrowsExactly<LicenseViolationException>();
+        await Assert.That(() => rule.Validate(new LicenseCriteria()))
+            .ThrowsExactly<LicenseViolationException>();
+    }
+
+    [Test]
     public async Task LibraryAssemblyHasTheExpectedStrongNameIdentity()
     {
         var token = typeof(License).Assembly.GetName().GetPublicKeyToken();

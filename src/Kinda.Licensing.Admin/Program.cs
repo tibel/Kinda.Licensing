@@ -50,6 +50,10 @@ internal static class Program
         {
             Description = "Optional path for the exported public key in PEM format."
         };
+        var deviceIdOption = new Option<string>("--device-id")
+        {
+            Description = "Optional stable device identifier supplied by the host; no hardware is collected."
+        };
 
         var issueCommand = new Command("issue", "Issue a signed license with at most a seven-day lease.")
         {
@@ -58,7 +62,8 @@ internal static class Program
             typeOption,
             expiresOption,
             metadataOption,
-            publicKeyOutputOption
+            publicKeyOutputOption,
+            deviceIdOption
         };
         issueCommand.SetAction(parseResult => Execute(() => Issue(
             RequiredValue(parseResult, privateKeyOption),
@@ -66,6 +71,7 @@ internal static class Program
             RequiredValue(parseResult, typeOption),
             RequiredValue(parseResult, expiresOption),
             parseResult.GetValue(publicKeyOutputOption),
+            parseResult.GetValue(deviceIdOption),
             parseResult.GetValue(metadataOption) ?? [])));
 
         var licenseOption = new Option<string>("--license")
@@ -78,14 +84,20 @@ internal static class Program
             Description = "Issuer RSA public key in PEM format.",
             Required = true
         };
+        var inspectDeviceIdOption = new Option<string>("--device-id")
+        {
+            Description = "Optional stable device identifier to verify the license binding."
+        };
         var inspectCommand = new Command("inspect", "Verify and display a license.")
         {
             licenseOption,
-            publicKeyOption
+            publicKeyOption,
+            inspectDeviceIdOption
         };
         inspectCommand.SetAction(parseResult => Execute(() => Inspect(
             RequiredValue(parseResult, licenseOption),
-            RequiredValue(parseResult, publicKeyOption))));
+            RequiredValue(parseResult, publicKeyOption),
+            parseResult.GetValue(inspectDeviceIdOption))));
 
         var rootCommand = new RootCommand("Issue and inspect signed Kinda.Licensing licenses.")
         {
@@ -133,6 +145,7 @@ internal static class Program
         string type,
         string expirationText,
         string? publicKeyOutput,
+        string? deviceId,
         IReadOnlyList<string> metadataValues)
     {
         var privateKeyPath = Path.GetFullPath(privateKeyInput);
@@ -150,6 +163,8 @@ internal static class Program
             throw new ArgumentException("--expires must be an ISO 8601 date-time.", "--expires");
 
         var metadata = ParseMetadata(metadataValues);
+        if (deviceId is not null)
+            metadata.Add(MachineCodeGenerator.MetadataKey, MachineCodeGenerator.Generate(deviceId));
         ValidateOutputPaths(privateKeyPath, outputPath, publicKeyOutput);
 
         var issueDate = DateTimeOffset.UtcNow;
@@ -178,7 +193,7 @@ internal static class Program
         return 0;
     }
 
-    private static int Inspect(string licenseInput, string publicKeyInput)
+    private static int Inspect(string licenseInput, string publicKeyInput, string? deviceId)
     {
         var licensePath = Path.GetFullPath(licenseInput);
         var publicKeyPath = Path.GetFullPath(publicKeyInput);
@@ -188,10 +203,11 @@ internal static class Program
         using var publicKey = RSA.Create();
         publicKey.ImportFromPem(File.ReadAllText(publicKeyPath));
 
-        var criteria = new LicenseValidator().Validate(
-            license,
-            publicKey,
-            [new LicenseOfflineLeaseRule()]);
+        var validationRules = new List<ILicenseValidationRule> { new LicenseOfflineLeaseRule() };
+        if (deviceId is not null)
+            validationRules.Add(new LicenseMachineCodeRule(deviceId));
+
+        var criteria = new LicenseValidator().Validate(license, publicKey, validationRules);
 
         Console.WriteLine($"Signature: valid");
         Console.WriteLine($"Id: {criteria.Id:D}");
@@ -213,7 +229,7 @@ internal static class Program
                 throw new ArgumentException("Metadata must use the format name=value.", "--metadata");
 
             var name = value[..separator];
-            if (name is "Id" or "IssueDate" or "Type" or "ExpirationDate")
+            if (name is "Id" or "IssueDate" or "Type" or "ExpirationDate" or MachineCodeGenerator.MetadataKey)
                 throw new ArgumentException($"Metadata name '{name}' is reserved.", "--metadata");
 
             XmlConvert.VerifyNCName(name);
