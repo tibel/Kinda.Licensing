@@ -35,6 +35,24 @@ issuing machine's current processor count for seven days.
 The demo generates a new private key each run and does **not** save it; it cannot reissue
 licenses under the same public key. Choose a new directory for another run.
 
+## Admin CLI
+
+The `Kinda.Licensing.Admin` tool issues and validates license files. It reads issuer PEM keys
+provided by the caller and never writes private keys:
+
+```powershell
+dotnet run --project src/Kinda.Licensing.Admin -- issue `
+  --private-key issuer-private.pem --output license.xml `
+  --public-key-output public-key.pem --type Subscription `
+  --expires 2026-12-01T00:00:00Z --metadata LicensedCores=4
+
+dotnet run --project src/Kinda.Licensing.Admin -- inspect `
+  --license license.xml --public-key public-key.pem
+```
+
+Issuance enforces a seven-day maximum lease, and output files are not overwritten. Inspection
+verifies the signature and lease before displaying the license criteria.
+
 ## Security
 
 - Licenses use an enveloped XML Digital Signature (XMLDSIG) over the whole document, with

@@ -3,6 +3,9 @@
     <Project Path="src/Kinda.Licensing.Demo.ClientApp/Kinda.Licensing.Demo.ClientApp.csproj" />
     <Project Path="src/Kinda.Licensing.Demo.ServerApp/Kinda.Licensing.Demo.ServerApp.csproj" />
   </Folder>
+  <Folder Name="/Admin/">
+    <Project Path="src/Kinda.Licensing.Admin/Kinda.Licensing.Admin.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kinda.Licensing.Tests/Kinda.Licensing.Tests.csproj" />
   </Folder>
