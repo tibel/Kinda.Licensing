@@ -2,16 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography.Xml;
 using System.Xml.Linq;
 
 namespace Kinda.Licensing;
 
+/// <summary>Serializes and deserializes license criteria as an XML document.</summary>
 public class LicenseCriteriaSerializer
 {
+    private static readonly XName SignatureName = XName.Get(LicenseElements.Signature, SignedXml.XmlDsigNamespaceUrl);
+
+    /// <summary>Serializes the specified criteria into a license XML document.</summary>
+    /// <param name="licenseCriteria">The criteria to serialize.</param>
+    /// <returns>An XML document containing the license criteria.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="licenseCriteria"/> is <see langword="null"/>.</exception>
     public XDocument Serialize(LicenseCriteria licenseCriteria)
     {
-        if (licenseCriteria == null)
-            throw new ArgumentNullException(nameof(licenseCriteria));
+        ArgumentNullException.ThrowIfNull(licenseCriteria);
 
         var document = new XDocument();
 
@@ -39,10 +46,14 @@ public class LicenseCriteriaSerializer
         return document;
     }
 
+    /// <summary>Deserializes license criteria from an XML document.</summary>
+    /// <param name="document">The XML document to deserialize.</param>
+    /// <returns>The license criteria contained in the document.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="document"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidDataException">The document does not have a license root element.</exception>
     public LicenseCriteria Deserialize(XDocument document)
     {
-        if (document == null)
-            throw new ArgumentNullException(nameof(document));
+        ArgumentNullException.ThrowIfNull(document);
 
         var license = document.Root;
         if (license == null || license.Name != LicenseElements.License)
@@ -52,7 +63,7 @@ public class LicenseCriteriaSerializer
 
         foreach (var element in license.Elements())
         {
-            if (element.Name.LocalName == LicenseElements.Signature)
+            if (element.Name == SignatureName)
                 continue;
 
             licenseDetails.Add(element.Name.LocalName, element.Value);

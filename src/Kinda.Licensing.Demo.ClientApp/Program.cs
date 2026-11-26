@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Xml.Linq;
 
 namespace Kinda.Licensing.Demo.ClientApp;
@@ -17,7 +18,8 @@ public class Program
 
         try
         {
-            var publicKey = new CryptoKey(File.ReadAllText(Path.Combine(args[0], "public-key.xml")));
+            using var publicKey = RSA.Create();
+            publicKey.ImportFromPem(File.ReadAllText(Path.Combine(args[0], "public-key.pem")));
             var license = new License(XDocument.Load(Path.Combine(args[0], "license.xml")));
             var rules = new List<ILicenseValidationRule>
             {

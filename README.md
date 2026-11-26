@@ -29,19 +29,20 @@ dotnet run --project $server -- demo-license
 dotnet run --project $client -- demo-license
 ```
 
-The issuer writes `public-key.xml` and `license.xml` to the chosen directory and refuses to
-overwrite either file. It licenses the issuing machine's current processor count for 30 days.
+The issuer writes a PEM-encoded SubjectPublicKeyInfo public key (`public-key.pem`) and
+`license.xml` to the chosen directory and refuses to overwrite either file. It licenses the
+issuing machine's current processor count for 30 days.
 The demo generates a new private key each run and does **not** save it; it cannot reissue
 licenses under the same public key. Choose a new directory for another run.
 
 ## Security
 
-- The .NET 10 release drops .NET Standard 2.0 and .NET Core 2.1 support.
-- Signatures use a library-specific XML format with RSA PKCS#1 v1.5 and SHA-256, not XML
-  Digital Signature. Changing the XML serialization can invalidate signatures.
-- Private keys are returned as plaintext XML strings. Keep them out of source control, logs,
-  client applications and unsecured storage. Production issuers need protected key storage,
-  controlled access and a key rotation strategy.
+- Licenses use an enveloped XML Digital Signature (XMLDSIG) over the whole document, with
+  RSA-SHA256, SHA-256 digests and canonical XML. Licenses signed with the previous custom
+  format are incompatible and must be reissued.
+- The library accepts caller-owned `RSA` keys. Protect private keys in memory and at rest; never
+  distribute them to clients or commit them to source control. Production issuers need protected
+  key storage, controlled access and a key rotation strategy.
 - Signature validation detects modification of licensed data; it does not prevent a user from
   modifying a client application, bypassing validation or changing the system clock.
 - Treat XML license input as untrusted and impose appropriate input size and parsing limits.

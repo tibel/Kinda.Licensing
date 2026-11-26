@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace Kinda.Licensing.Demo.ServerApp;
 
@@ -15,7 +16,7 @@ public class Program
         }
 
         var outputDirectory = args[0];
-        var publicKeyPath = Path.Combine(outputDirectory, "public-key.xml");
+        var publicKeyPath = Path.Combine(outputDirectory, "public-key.pem");
         var licensePath = Path.Combine(outputDirectory, "license.xml");
         if (File.Exists(publicKeyPath) || File.Exists(licensePath))
         {
@@ -25,9 +26,8 @@ public class Program
 
         Directory.CreateDirectory(outputDirectory);
 
-        var provider = new CryptoKeyProvider();
-        var privateKey = provider.GenerateKey();
-        var publicKey = provider.ExtractPublicKey(privateKey);
+        using var privateKey = RSA.Create();
+        var publicKey = privateKey.ExportSubjectPublicKeyInfoPem();
         var criteria = new LicenseCriteria
         {
             ExpirationDate = DateTimeOffset.UtcNow.AddDays(30),
@@ -38,16 +38,14 @@ public class Program
         };
         var license = new LicenseGenerator().Generate(privateKey, criteria);
 
-        using (var stream = new FileStream(publicKeyPath, FileMode.CreateNew, FileAccess.Write))
-        using (var writer = new StreamWriter(stream))
-            writer.Write(publicKey.Contents);
+        File.WriteAllText(publicKeyPath, publicKey);
 
         using (var stream = new FileStream(licensePath, FileMode.CreateNew, FileAccess.Write))
             license.Document.Save(stream);
 
         Console.WriteLine("Public key: " + publicKeyPath);
         Console.WriteLine("License: " + licensePath);
-        Console.WriteLine("The demo signing key was not saved.");
+        Console.WriteLine("The demo private key was not saved.");
         return 0;
     }
 }
