@@ -20,6 +20,15 @@ public class LicenseTests
     }
 
     [Test]
+    public async Task LibraryAssemblyHasTheExpectedStrongNameIdentity()
+    {
+        var token = typeof(License).Assembly.GetName().GetPublicKeyToken();
+        var tokenText = token is null ? string.Empty : Convert.ToHexString(token).ToLowerInvariant();
+
+        await Assert.That(tokenText).IsEqualTo("fa3d388d24e09245");
+    }
+
+    [Test]
     public async Task LicenseLoadPreservesStreamOwnershipAndEnforcesSizeLimit()
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("<License/>"));

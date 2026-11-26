@@ -44,6 +44,9 @@ licenses under the same public key. Choose a new directory for another run.
   distribute them to clients or commit them to source control. The host can keep private keys in an
   external KMS and pass the RSA handle to the library. `ValidateWithAnyPublicKey` supports rotation:
   retain trusted retiring public keys until leases they signed have expired.
+- The library assembly is public-signed to provide a stable strong-name identity. Public signing
+  does not authenticate the publisher or protect the assembly; use NuGet package signing when
+  publisher authenticity is required.
 - `LicenseOfflineLeaseRule` enforces a seven-day maximum lease by default. `LicenseRevocationRule`
   rejects IDs in a host-provided revocation snapshot; hosts must authenticate and refresh that
   snapshot when clients reconnect. Offline revocation cannot be immediate.
