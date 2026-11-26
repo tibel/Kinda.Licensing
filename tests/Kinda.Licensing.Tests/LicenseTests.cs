@@ -1,5 +1,7 @@
+using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -15,6 +17,99 @@ public class LicenseTests
         await Assert.That(criteria.Type).IsEqualTo(string.Empty);
         await Assert.That(criteria.MetaData).IsNotNull();
         await Assert.That(criteria.MetaData.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task LicenseLoadPreservesStreamOwnershipAndEnforcesSizeLimit()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("<License/>"));
+
+        var license = License.Load(stream, 32);
+
+        await Assert.That(license.Document.Root!.Name.LocalName).IsEqualTo("License");
+        await Assert.That(stream.CanRead).IsTrue();
+
+        using var oversizedStream = new MemoryStream(Encoding.UTF8.GetBytes("<License/>"));
+        await Assert.That(() => License.Load(oversizedStream, 5)).ThrowsExactly<XmlException>();
+    }
+
+    [Test]
+    public async Task LicenseLoadRejectsDtd()
+    {
+        const string xml = "<!DOCTYPE License [<!ENTITY x \"value\">]><License>&x;</License>";
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+
+        await Assert.That(() => License.Load(stream)).ThrowsExactly<XmlException>();
+    }
+
+    [Test]
+    public async Task LicenseLoadPreservesSignedXml()
+    {
+        using var privateKey = RSA.Create();
+        using var publicKey = CreatePublicKey(privateKey);
+        var license = new LicenseGenerator().Generate(
+            privateKey,
+            CreateCriteria(DateTimeOffset.UtcNow.AddDays(1)));
+        using var stream = new MemoryStream();
+        license.Document.Save(stream, SaveOptions.DisableFormatting);
+        stream.Position = 0;
+
+        var loadedLicense = License.Load(stream);
+        var criteria = new LicenseValidator().Validate(loadedLicense, publicKey, []);
+
+        await Assert.That(criteria.Id).IsEqualTo(
+            new LicenseCriteriaSerializer().Deserialize(license.Document).Id);
+    }
+
+    [Test]
+    public async Task OfflineLeaseRuleEnforcesSevenDayLifetime()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var criteria = new LicenseCriteria
+        {
+            IssueDate = now.AddDays(-1),
+            ExpirationDate = now.AddDays(6)
+        };
+
+        new LicenseOfflineLeaseRule().Validate(criteria);
+        await Assert.That(criteria.ExpirationDate - criteria.IssueDate).IsEqualTo(TimeSpan.FromDays(7));
+    }
+
+    [Test]
+    [Arguments("too-long")]
+    [Arguments("future-issue")]
+    public async Task OfflineLeaseRuleRejectsInvalidLease(string invalidLease)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var criteria = invalidLease switch
+        {
+            "too-long" => new LicenseCriteria
+            {
+                IssueDate = now.AddDays(-1),
+                ExpirationDate = now.AddDays(7)
+            },
+            "future-issue" => new LicenseCriteria
+            {
+                IssueDate = now.AddMinutes(6),
+                ExpirationDate = now.AddDays(1)
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(invalidLease))
+        };
+
+        await Assert.That(() => new LicenseOfflineLeaseRule().Validate(criteria))
+            .ThrowsExactly<LicenseViolationException>();
+    }
+
+    [Test]
+    public async Task RevocationRuleRejectsIdsFromItsSnapshot()
+    {
+        var revokedId = Guid.NewGuid();
+        var snapshot = new HashSet<Guid> { revokedId };
+        var rule = new LicenseRevocationRule(snapshot);
+        snapshot.Clear();
+
+        await Assert.That(() => rule.Validate(new LicenseCriteria { Id = revokedId }))
+            .ThrowsExactly<LicenseViolationException>();
     }
 
     [Test]
@@ -34,6 +129,34 @@ public class LicenseTests
         await Assert.That(actual.MetaData["LicensedCores"]).IsEqualTo(expected.MetaData["LicensedCores"]);
         await Assert.That(actual.MetaData["Signature"]).IsEqualTo(expected.MetaData["Signature"]);
         await Assert.That(metadataRule.WasCalled).IsTrue();
+    }
+
+    [Test]
+    public async Task ValidatesAgainstRetiringKeyDuringRotation()
+    {
+        using var retiringPrivateKey = RSA.Create();
+        using var retiringPublicKey = CreatePublicKey(retiringPrivateKey);
+        using var currentPublicKey = RSA.Create();
+        var criteria = CreateCriteria(DateTimeOffset.UtcNow.AddDays(1));
+        var license = new LicenseGenerator().Generate(retiringPrivateKey, criteria);
+
+        var actual = new LicenseValidator().ValidateWithAnyPublicKey(
+            license, [currentPublicKey, retiringPublicKey], []);
+
+        await Assert.That(actual.Id).IsEqualTo(criteria.Id);
+    }
+
+    [Test]
+    public async Task RejectsLicenseWhenNoRotationKeyMatches()
+    {
+        using var signingKey = RSA.Create();
+        using var unrelatedKey = RSA.Create();
+        var license = new LicenseGenerator().Generate(
+            signingKey,
+            CreateCriteria(DateTimeOffset.UtcNow.AddDays(1)));
+
+        await Assert.That(() => new LicenseValidator().ValidateWithAnyPublicKey(
+            license, [unrelatedKey], [])).ThrowsExactly<InvalidLicenseException>();
     }
 
     [Test]

@@ -31,7 +31,7 @@ dotnet run --project $client -- demo-license
 
 The issuer writes a PEM-encoded SubjectPublicKeyInfo public key (`public-key.pem`) and
 `license.xml` to the chosen directory and refuses to overwrite either file. It licenses the
-issuing machine's current processor count for 30 days.
+issuing machine's current processor count for seven days.
 The demo generates a new private key each run and does **not** save it; it cannot reissue
 licenses under the same public key. Choose a new directory for another run.
 
@@ -41,11 +41,19 @@ licenses under the same public key. Choose a new directory for another run.
   RSA-SHA256, SHA-256 digests and canonical XML. Licenses signed with the previous custom
   format are incompatible and must be reissued.
 - The library accepts caller-owned `RSA` keys. Protect private keys in memory and at rest; never
-  distribute them to clients or commit them to source control. Production issuers need protected
-  key storage, controlled access and a key rotation strategy.
+  distribute them to clients or commit them to source control. The host can keep private keys in an
+  external KMS and pass the RSA handle to the library. `ValidateWithAnyPublicKey` supports rotation:
+  retain trusted retiring public keys until leases they signed have expired.
+- `LicenseOfflineLeaseRule` enforces a seven-day maximum lease by default. `LicenseRevocationRule`
+  rejects IDs in a host-provided revocation snapshot; hosts must authenticate and refresh that
+  snapshot when clients reconnect. Offline revocation cannot be immediate.
+- `License.Load` parses XML with DTD processing disabled and a one-million-character limit by
+  default. Callers that parse XML themselves remain responsible for safe parsing and size limits.
 - Signature validation detects modification of licensed data; it does not prevent a user from
-  modifying a client application, bypassing validation or changing the system clock.
-- Treat XML license input as untrusted and impose appropriate input size and parsing limits.
+  modifying a client application, bypassing validation or changing the system clock. Offline
+  expiration is therefore a policy for an uncompromised verifier and clock, not a guarantee against
+  a determined user with local control. Enforce valuable operations on a trusted server when
+  resistance to local tampering is required.
 
 ## License
 

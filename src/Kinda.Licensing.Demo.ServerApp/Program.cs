@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Xml.Linq;
 
 namespace Kinda.Licensing.Demo.ServerApp;
 
@@ -28,10 +29,11 @@ public class Program
 
         using var privateKey = RSA.Create();
         var publicKey = privateKey.ExportSubjectPublicKeyInfoPem();
+        var issueDate = DateTimeOffset.UtcNow;
         var criteria = new LicenseCriteria
         {
-            ExpirationDate = DateTimeOffset.UtcNow.AddDays(30),
-            IssueDate = DateTimeOffset.UtcNow,
+            ExpirationDate = issueDate.AddDays(7),
+            IssueDate = issueDate,
             Id = Guid.NewGuid(),
             MetaData = new Dictionary<string, string> { { "LicensedCores", Environment.ProcessorCount.ToString() } },
             Type = "Subscription"
@@ -41,7 +43,7 @@ public class Program
         File.WriteAllText(publicKeyPath, publicKey);
 
         using (var stream = new FileStream(licensePath, FileMode.CreateNew, FileAccess.Write))
-            license.Document.Save(stream);
+            license.Document.Save(stream, SaveOptions.DisableFormatting);
 
         Console.WriteLine("Public key: " + publicKeyPath);
         Console.WriteLine("License: " + licensePath);

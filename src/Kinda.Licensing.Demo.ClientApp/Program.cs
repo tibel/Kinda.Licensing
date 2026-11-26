@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using System.Xml.Linq;
 
 namespace Kinda.Licensing.Demo.ClientApp;
 
@@ -20,10 +19,11 @@ public class Program
         {
             using var publicKey = RSA.Create();
             publicKey.ImportFromPem(File.ReadAllText(Path.Combine(args[0], "public-key.pem")));
-            var license = new License(XDocument.Load(Path.Combine(args[0], "license.xml")));
+            using var licenseStream = File.OpenRead(Path.Combine(args[0], "license.xml"));
+            var license = License.Load(licenseStream);
             var rules = new List<ILicenseValidationRule>
             {
-                new SimpleLicenseHasNotExpiredRule(),
+                new LicenseOfflineLeaseRule(),
                 new ValidNumberOfCoresLicenseRule()
             };
 
